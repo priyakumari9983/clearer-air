@@ -2,6 +2,8 @@
 
 **Vertical:** families and communities facing severe winter smog.
 
+![Clearer Air Demo](demo.gif)
+
 ## Approach and logic
 1. Live US AQI comes from Open-Meteo (no key, free) for the chosen city or device location.
 2. `src/logic.js` (pure, unit-tested) turns AQI + household (children, older adults, lung conditions) + commute into a ranked plan. Sensitive households are advised one band worse.
