@@ -2,7 +2,7 @@
 
 **Vertical:** families and communities facing severe winter smog.
 
-![Clearer Air Demo](demo.gif)
+[Watch the 30-second demo](demo.mp4)
 
 ## Approach and logic
 1. Live US AQI comes from Open-Meteo (no key, free) for the chosen city or device location.
@@ -13,8 +13,9 @@
 ## Quality notes
 - **Security:** strict CSP + security headers (`vercel.json`), allow-list validation (`src/validate.js`), no `innerHTML`, API key server-side only, rate limit, timeouts. Health details are never stored.
 - **Accessibility:** semantic form, labels, skip link, `aria-live` results, focus management, 44 px targets, colour never the only signal, dark mode, reduced motion.
-- **Efficiency:** zero dependencies, no build step, ~15 KB total.
-- **Testing:** `npm test` (Node built-in runner).
+- **Efficiency:** zero dependencies and no build step (~25 KB of app code). Geocoding is cached per session, stale requests are aborted, identical Gemini requests are served from a 30-minute bounded cache, and static assets are cacheable. The demo video is never loaded by the app.
+- **Testing:** `npm test` / `npm run coverage` (Node built-in runner, no dependencies). Covers band boundaries, every rule, validation, rate limiter, cache, Open-Meteo client and every API branch (405/400/429, no key, success, cache hit, Gemini failure) with injected fakes. GitHub Actions runs it on Node 20 and 22.
+- **Structure:** `src/constants.js` (shared rules), `logic.js` (pure decisions), `validate.js`, `airApi.js`, `prompt.js`, `rateLimiter.js`, `ttlCache.js`, `app.js` (UI only), `api/advice.js` (injected dependencies).
 
 ## Run and deploy
 `npm test` · `npx vercel dev` · push to GitHub and import into Vercel. Optional env: `GEMINI_API_KEY`, `GEMINI_MODEL`.

@@ -1,35 +1,10 @@
 import { buildPlan } from './logic.js';
+import { createAirApi } from './airApi.js';
+import { CITY_PATTERN } from './constants.js';
 
 const $ = (id) => document.getElementById(id);
-const API = { geo: 'https://geocoding-api.open-meteo.com/v1/search', air: 'https://air-quality-api.open-meteo.com/v1/air-quality' };
-const TIMEOUT = 8000;
-
-/** Safe DOM builder: text only, never innerHTML. */
-function h(tag, attrs = {}, ...kids) {
-  const el = document.createElementNS(attrs.ns ?? 'http://www.w3.org/1999/xhtml', tag);
-  for (const [k, v] of Object.entries(attrs)) if (k !== 'ns') el.setAttribute(k, v);
-  el.append(...kids.filter((k) => k != null));
-  return el;
-}
-const getJson = async (url) => {
-  const r = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT) });
-  if (!r.ok) throw new Error('Air quality service is unavailable. Try again shortly.');
-  return r.json();
-};
-
-async function resolveLocation(city, coords) {
-  if (coords) return { ...coords, name: 'your location' };
-  const g = await getJson(`${API.geo}?name=${encodeURIComponent(city)}&count=1`);
-  const hit = g.results?.[0];
-  if (!hit) throw new Error(`We couldn’t find “${city}”. Check the spelling or use your location.`);
-  return { latitude: hit.latitude, longitude: hit.longitude, name: hit.name };
-}
-const fetchAqi = async ({ latitude, longitude }) => {
-  const d = await getJson(`${API.air}?latitude=${latitude}&longitude=${longitude}&current=us_aqi`);
-  const aqi = d.current?.us_aqi;
-  if (!Number.isFinite(aqi)) throw new Error('No air quality reading exists for this place yet.');
-  return Math.round(aqi);
-};
+const air = createAirApi((...args) => fetch(...args));
+let inFlight; // cancels a stale request when the form is resubmitted
 
 function gauge(aqi) {
   const C = 2 * Math.PI * 45, frac = Math.min(aqi, 300) / 300, ns = 'http://www.w3.org/2000/svg';
@@ -61,6 +36,9 @@ async function loadSummary(profile) {
 
 async function run(coords) {
   const err = $('city-error'), btn = $('go'), out = $('result');
+  inFlight?.abort();
+  inFlight = new AbortController();
+  const { signal } = inFlight;
   err.hidden = true;
   const city = $('city').value.trim();
   if (!coords && city.length < 2) { err.textContent = 'Enter your city, or use your location.'; err.hidden = false; $('city').focus(); return; }
@@ -69,13 +47,14 @@ async function run(coords) {
   btn.disabled = true; out.setAttribute('aria-busy', 'true');
   out.replaceChildren(h('div', { class: 'skeleton', role: 'status' }, h('span', { class: 'skip' }, 'Loading air quality')));
   try {
-    const loc = await resolveLocation(city, coords);
-    const aqi = await fetchAqi(loc);
+    const loc = await air.resolveLocation(city, coords, signal);
+    const aqi = await air.fetchAqi(loc, signal);
     const plan = render(loc.name, buildPlan({ household, commute }, aqi));
-    if (/^[\p{L}\p{M}\s.'-]{2,60}$/u.test(loc.name) && loc.name !== 'your location') loadSummary({ city: loc.name, aqi: plan.aqi, household, commute });
+    if (CITY_PATTERN.test(loc.name) && loc.name !== 'your location') loadSummary({ city: loc.name, aqi: plan.aqi, household, commute });
   } catch (e) {
+    if (signal.aborted) return; // superseded by a newer request
     out.replaceChildren(h('p', { class: 'error', role: 'alert' }, e.message || 'Something went wrong. Please try again.'));
-  } finally { btn.disabled = false; out.setAttribute('aria-busy', 'false'); }
+  } finally { if (!signal.aborted) { btn.disabled = false; out.setAttribute('aria-busy', 'false'); } }
 }
 
 $('form').addEventListener('submit', (e) => { e.preventDefault(); run(); });

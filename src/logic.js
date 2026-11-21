@@ -1,3 +1,5 @@
+import { HOUSEHOLD } from './constants.js';
+
 // Pure decision logic: no DOM, no network. Fully unit-tested.
 export const BANDS = [
   { max: 50, id: 'good', label: 'Good' },
@@ -13,7 +15,7 @@ export const bandIndex = (aqi) => BANDS.findIndex((b) => aqi <= b.max);
 
 /** Sensitive households are advised as if air were one band worse (above AQI 50). */
 export function effectiveLevel(aqi, household = []) {
-  const vulnerable = household.some((h) => ['children', 'older', 'respiratory'].includes(h));
+  const vulnerable = household.some((h) => HOUSEHOLD.includes(h));
   return Math.min(BANDS.length - 1, bandIndex(aqi) + (vulnerable && aqi > 50 ? 1 : 0));
 }
 
