@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Daily smog guidance for your family, based on live air quality in your city.">
+<title>Clearer Air: smog guidance for your home</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<a class="skip" href="#result">Skip to your plan</a>
+<header><h1>Clearer Air</h1><p>Today’s smog, translated into what your family should do.</p></header>
+<main>
+  <form id="form" novalidate>
+    <div class="field">
+      <label for="city">City</label>
+      <div class="row"><input id="city" name="city" autocomplete="address-level2" required maxlength="60" placeholder="For example, Delhi">
+      <button type="button" id="locate" class="ghost">Use my location</button></div>
+      <p id="city-error" class="error" role="alert" hidden></p>
+    </div>
+    <fieldset><legend>Who is at home?</legend>
+      <label class="chip"><input type="checkbox" name="household" value="children"><span>Children</span></label>
+      <label class="chip"><input type="checkbox" name="household" value="older"><span>Older adults</span></label>
+      <label class="chip"><input type="checkbox" name="household" value="respiratory"><span>Asthma or lung conditions</span></label>
+    </fieldset>
+    <div class="field"><label for="commute">How do you usually get around?</label>
+      <select id="commute" name="commute"><option value="car">Car</option><option value="twowheeler">Motorbike or scooter</option>
+      <option value="walk-bike">Walk or cycle</option><option value="transit">Bus or train</option></select></div>
+    <button type="submit" id="go">Get today’s plan</button>
+    <p class="note">Your health details stay in your browser and are never stored.</p>
+  </form>
+  <section id="result" tabindex="-1" aria-live="polite" aria-busy="false"></section>
+</main>
+<script type="module" src="src/app.js"></script>
+</body>
+</html>
